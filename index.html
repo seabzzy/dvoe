@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14122a">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; connect-src https://0.peerjs.com wss://0.peerjs.com; media-src 'self' blob: mediastream:; img-src 'self' data:; manifest-src data:; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<title>Двое</title>
+<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22%D0%94%D0%B2%D0%BE%D0%B5%22%2C%22short_name%22%3A%22%D0%94%D0%B2%D0%BE%D0%B5%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%2314122a%22%2C%22theme_color%22%3A%22%2314122a%22%2C%22start_url%22%3A%22.%22%7D">
+<style>
+  /* Layout: one-screen app, start card → full-bleed call view */
+  :root {
+    --night: #14122a;
+    --night-2: #1f1c3d;
+    --line: #3a3566;
+    --text: #f1eefc;
+    --muted: #a7a1c9;
+    --peach: #ffb38a;
+    --red: #ff5a6a;
+    --display: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+    --body: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: radial-gradient(120% 80% at 50% 0%, #2a2452 0%, var(--night) 60%);
+    background-color: var(--night);
+    color: var(--text);
+    font-family: var(--body);
+    font-size: 16px;
+    -webkit-tap-highlight-color: transparent;
+    overflow: hidden;
+  }
+  [hidden] { display: none !important; }
+
+  /* ---------- start screen ---------- */
+  #start {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 28px;
+    padding: calc(24px + env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+    max-width: 440px;
+    margin: 0 auto;
+    overflow-y: auto;
+  }
+  h1 {
+    font-family: var(--display);
+    font-weight: 700;
+    font-size: 56px;
+    line-height: 1;
+    margin: 0;
+    letter-spacing: -0.02em;
+  }
+  h1 span { color: var(--peach); }
+  .lead { color: var(--muted); margin: 10px 0 0; line-height: 1.5; }
+  .field { display: flex; flex-direction: column; gap: 8px; }
+  label { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
+  .row { display: flex; gap: 8px; }
+  input[type=text], input[type=password] {
+    flex: 1; min-width: 0;
+    background: var(--night-2);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    color: var(--text);
+    font: 600 18px var(--body);
+    padding: 14px 16px;
+    outline: none;
+  }
+  input:focus { border-color: var(--peach); }
+  button { font-family: var(--body); cursor: pointer; }
+  .ghost {
+    background: transparent; border: 1px solid var(--line); color: var(--text);
+    border-radius: 14px; padding: 0 14px; font-weight: 600; font-size: 14px;
+  }
+  .primary {
+    background: var(--peach); color: #2a1a10; border: 0;
+    border-radius: 18px; padding: 18px; font-size: 18px; font-weight: 700;
+  }
+  .primary:active { transform: scale(.98); }
+  .check { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 15px; }
+  .check input { width: 20px; height: 20px; accent-color: var(--peach); }
+  details { color: var(--muted); font-size: 14px; }
+  details summary { cursor: pointer; padding: 4px 0; }
+  details .field { margin-top: 12px; }
+  details input[type=text], details input[type=password] { font-size: 15px; padding: 12px 14px; }
+  .hint { font-size: 13px; color: var(--muted); line-height: 1.5; margin: 0; }
+  .err { color: var(--red); font-size: 14px; min-height: 1em; margin: 0; }
+  :focus-visible { outline: 2px solid var(--peach); outline-offset: 2px; }
+
+  /* ---------- call screen ---------- */
+  #call { position: fixed; inset: 0; background: #000; }
+  #remote { width: 100%; height: 100%; object-fit: cover; background: #000; }
+  #local {
+    position: absolute;
+    top: calc(16px + env(safe-area-inset-top));
+    right: calc(16px + env(safe-area-inset-right));
+    width: 28vw; max-width: 140px; aspect-ratio: 3/4;
+    object-fit: cover; border-radius: 16px;
+    border: 2px solid rgba(255,255,255,.25);
+    background: var(--night-2);
+    transform: scaleX(-1);
+  }
+  #local.back { transform: none; }
+  #status {
+    position: absolute; left: 0; right: 0; top: 40%;
+    text-align: center; padding: 0 24px;
+    font-family: var(--display); font-size: 26px; font-weight: 500;
+    text-shadow: 0 2px 12px rgba(0,0,0,.6);
+  }
+  #status.warn { color: #ffd0d5; }
+  #status small { display: block; font-family: var(--body); font-size: 14px; color: var(--muted); margin-top: 8px; }
+  #timer {
+    position: absolute; left: calc(16px + env(safe-area-inset-left)); top: calc(20px + env(safe-area-inset-top));
+    font-variant-numeric: tabular-nums; font-weight: 700; font-size: 15px;
+    background: rgba(0,0,0,.45); padding: 6px 12px; border-radius: 999px;
+  }
+  #diag {
+    position: absolute; left: 0; right: 0;
+    bottom: calc(118px + env(safe-area-inset-bottom));
+    text-align: center; font-size: 12px; color: #d8d3f2; opacity: .8;
+    padding: 0 max(16px, env(safe-area-inset-left)); text-shadow: 0 1px 4px #000;
+  }
+  .controls {
+    position: absolute; left: 0; right: 0; bottom: 0;
+    display: flex; justify-content: center; gap: 16px;
+    padding: 24px 16px calc(28px + env(safe-area-inset-bottom));
+    background: linear-gradient(transparent, rgba(0,0,0,.7));
+  }
+  .cbtn {
+    width: 62px; height: 62px; border-radius: 50%; border: 0;
+    background: rgba(255,255,255,.18); color: #fff;
+    display: grid; place-items: center;
+    backdrop-filter: blur(8px);
+  }
+  .cbtn svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .cbtn.off { background: #fff; color: #111; }
+  .cbtn.end { background: var(--red); }
+  .cbtn.end svg { transform: rotate(135deg); }
+</style>
+</head>
+<body>
+
+<main id="start">
+  <div>
+    <h1>Дво<span>е</span></h1>
+    <p class="lead">Звонки только для вас двоих. Введите одинаковый код на обоих телефонах и нажмите «Позвонить».</p>
+  </div>
+
+  <div class="field">
+    <label for="room">Ваш секретный код</label>
+    <div class="row">
+      <input id="room" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="нажмите «Новый»" minlength="10">
+      <button class="ghost" id="gen" type="button">Новый</button>
+    </div>
+    <p class="hint">Код — единственный ключ к вашим звонкам. Получите его кнопкой «Новый» и передайте девушке лично или в защищённом мессенджере. Никому больше не показывайте.</p>
+  </div>
+
+  <label class="check"><input type="checkbox" id="audioOnly"> Только голос (экономит трафик)</label>
+  <label class="check"><input type="checkbox" id="remember"> Запомнить код на этом телефоне</label>
+
+  <button class="primary" id="go" type="button">Позвонить</button>
+  <p class="err" id="err"></p>
+
+  <details>
+    <summary>Если не соединяется через мобильный интернет</summary>
+    <p class="hint" style="margin-top:10px">Некоторые операторы мешают прямому соединению. Тогда нужен TURN-сервер. Бесплатный можно получить на metered.ca (Open Relay): зарегистрируйтесь и скопируйте сюда адрес, логин и пароль. Заполните одинаково на обоих телефонах.</p>
+    <div class="field"><label for="turnUrl">TURN адрес</label><input id="turnUrl" type="text" placeholder="turn:global.relay.metered.ca:80"></div>
+    <div class="field"><label for="turnUser">Логин</label><input id="turnUser" type="text" autocomplete="off"></div>
+    <div class="field"><label for="turnPass">Пароль</label><input id="turnPass" type="password" autocomplete="off"></div>
+    <label class="check" style="margin-top:12px"><input type="checkbox" id="relayOnly"> Скрыть мой IP-адрес от собеседника (весь звонок идёт через TURN)</label>
+  </details>
+</main>
+
+<section id="call" hidden>
+  <video id="remote" autoplay playsinline></video>
+  <video id="local" autoplay playsinline muted></video>
+  <div id="timer" hidden>00:00</div>
+  <div id="status">Подключаемся…</div>
+  <div id="diag"></div>
+  <div class="controls">
+    <button class="cbtn" id="mic" aria-label="Микрофон">
+      <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>
+    </button>
+    <button class="cbtn" id="cam" aria-label="Камера">
+      <svg viewBox="0 0 24 24"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/></svg>
+    </button>
+    <button class="cbtn" id="flip" aria-label="Сменить камеру">
+      <svg viewBox="0 0 24 24"><path d="M4 9a8 8 0 0 1 14-3l2 2M20 15a8 8 0 0 1-14 3l-2-2"/><path d="M20 4v4h-4M4 20v-4h4"/></svg>
+    </button>
+    <button class="cbtn end" id="hang" aria-label="Завершить">
+      <svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>
+    </button>
+  </div>
+</section>
+
+<script src="peerjs.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
